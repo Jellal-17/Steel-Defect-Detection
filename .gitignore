@@ -1,0 +1,8 @@
+# Byte-compiled files
+*.pyc
+__pycache__/
+
+# Data and results
+data/
+results/
+models/
