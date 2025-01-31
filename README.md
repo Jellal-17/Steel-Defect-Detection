@@ -7,7 +7,7 @@ This project implements a steel defect detection system using a UNet-based seman
 - **Real-Time Inference**: Process images in real-time and save predicted masks.
 - **Metrics**: Evaluate model performance using Dice coefficient and IoU.
 
-
+--Note: It is still under work. I'm making this a side project but as I have limited time, I do not work on this often.
 ## Installation
 1. Clone the repository:
    ```bash
