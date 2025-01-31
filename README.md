@@ -21,28 +21,32 @@ This project implements a steel defect detection system using a UNet-based seman
 
 ## Usage
 ### Training
-To train the model, run:
+decode RLE, run:
 
 ```bash
-python src/train.py
+python src/decode_RLE.py
 ```
-### Evaluation
-To evaluate the model, run:
+Preprocess the Data:
 
 ```bash
-python src/evaluate.py
+python src/data_preprocessing.py
 ```
-
 ## Real-Time Inference
 To perform real-time inference, run:
 
 ```bash
-python src/real_time_inference.py
+python src/real_time.py
+```
+
+### Visualising
+To visulaise the model performance, run:
+
+```bash
+python src/visualise.py
 ```
 
 ## Results
-- Validation Dice Coefficient: XX.XX
-- Validation IoU: XX.XX
+- Yet to publish
 
 ## License
 This project is licensed under the MIT License.
