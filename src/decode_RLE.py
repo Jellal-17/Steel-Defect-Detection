@@ -8,10 +8,6 @@ TRAIN_CSV = "train.csv"
 TRAIN_IMAGES = "train_images/"
 MASK_OUTPUT = "mask_output/"
 
-# Load CSV
-train_df = pd.read_csv(TRAIN_CSV)
-
-
 # Function to decode RLE
 def rle_decode(mask_rle, shape=(256, 1600)):
     """
@@ -32,25 +28,29 @@ def rle_decode(mask_rle, shape=(256, 1600)):
     return mask.reshape(shape).T  # Reshape to original dimensions
 
 
-# Create Masks
-for idx, row in train_df.iterrows():
-    image_id = row["ImageId"]
-    class_id = row["ClassId"]
-    encoded_pixels = row["EncodedPixels"]
+if __name__ == "__main__":
+    # Load CSV
+    train_df = pd.read_csv(TRAIN_CSV)
 
-    # Load image dimensions
-    image_path = os.path.join(TRAIN_IMAGES, image_id)
-    img = Image.open(image_path)
-    height, width = img.size
+    # Create Masks
+    for idx, row in train_df.iterrows():
+        image_id = row["ImageId"]
+        class_id = row["ClassId"]
+        encoded_pixels = row["EncodedPixels"]
 
-    # Decode RLE to create a mask
-    mask = rle_decode(encoded_pixels, shape=(height, width))
+        # Load image dimensions
+        image_path = os.path.join(TRAIN_IMAGES, image_id)
+        img = Image.open(image_path)
+        height, width = img.size
 
-    # Save mask
-    mask_dir = os.path.join(MASK_OUTPUT, f"{class_id}")
-    os.makedirs(mask_dir, exist_ok=True)
-    mask_path = os.path.join(mask_dir, f"{image_id.split('.')[0]}_class{class_id}.png")
-    Image.fromarray(mask * 255).save(mask_path)
-    # Convert mask to binary image (0-255)
+        # Decode RLE to create a mask
+        mask = rle_decode(encoded_pixels, shape=(height, width))
 
-print("Masks generated and saved!")
+        # Save mask
+        mask_dir = os.path.join(MASK_OUTPUT, f"{class_id}")
+        os.makedirs(mask_dir, exist_ok=True)
+        mask_path = os.path.join(mask_dir, f"{image_id.split('.')[0]}_class{class_id}.png")
+        Image.fromarray(mask * 255).save(mask_path)
+        # Convert mask to binary image (0-255)
+
+    print("Masks generated and saved!")
