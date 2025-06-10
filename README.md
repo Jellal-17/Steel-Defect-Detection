@@ -29,7 +29,13 @@ python src/decode_RLE.py
 Preprocess the Data:
 
 ```bash
-python src/data_preprocessing.py
+python src/data_preprocessing.py \
+    --image-dir train_images \
+    --mask-dir mask_output \
+    --output-dir processed_data \
+    --img-size 512 \
+    --val-split 0.2 \
+    --augment
 ```
 Train the UNet model:
 
