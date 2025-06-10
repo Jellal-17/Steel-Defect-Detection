@@ -5,8 +5,8 @@ from PIL import Image
 
 # Paths
 TRAIN_CSV = "train.csv"
-TRAIN_IMAGES = "/media/storage1/Sathvik/Steel-Defect-Detection/notebooks/train_images/"
-MASK_OUTPUT = "/media/storage1/Sathvik/Steel-Defect-Detection/notebooks/mask_output/"
+TRAIN_IMAGES = "train_images/"
+MASK_OUTPUT = "mask_output/"
 
 # Load CSV
 train_df = pd.read_csv(TRAIN_CSV)

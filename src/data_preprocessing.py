@@ -4,9 +4,9 @@ from PIL import Image, ImageOps
 from sklearn.model_selection import train_test_split
 
 # Paths
-TRAIN_IMAGES = "/media/storage1/Sathvik/Steel-Defect-Detection/notebooks/train_images/"
-MASK_OUTPUT = "/media/storage1/Sathvik/Steel-Defect-Detection/notebooks/mask_output/"
-PROCESSED_DATA = "/media/storage1/Sathvik/Steel-Defect-Detection/processed_data/"
+TRAIN_IMAGES = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/train_images/"
+MASK_OUTPUT = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/mask_output/"
+PROCESSED_DATA = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/"
 
 # Target size for resizing
 IMG_SIZE = (512, 512)

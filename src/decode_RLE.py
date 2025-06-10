@@ -4,9 +4,9 @@ import pandas as pd
 from PIL import Image
 
 # Paths
-TRAIN_CSV = "train.csv"
-TRAIN_IMAGES = "train_images/"
-MASK_OUTPUT = "mask_output/"
+TRAIN_CSV = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/train.csv"
+TRAIN_IMAGES = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/train_images/"
+MASK_OUTPUT = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/mask_output/"
 
 # Function to decode RLE
 def rle_decode(mask_rle, shape=(256, 1600)):
