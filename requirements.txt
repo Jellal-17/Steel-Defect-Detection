@@ -5,4 +5,7 @@ matplotlib
 opencv-python
 pandas
 pytest
+pillow
 scikit-learn
+tqdm
+albumentations

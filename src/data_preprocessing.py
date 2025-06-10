@@ -1,78 +1,108 @@
 import os
-import numpy as np
+import argparse
+import json
 from PIL import Image, ImageOps
+import numpy as np
 from sklearn.model_selection import train_test_split
-
-# Paths
-TRAIN_IMAGES = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/train_images/"
-MASK_OUTPUT = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/mask_output/"
-PROCESSED_DATA = "/trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/"
-
-# Target size for resizing
-IMG_SIZE = (512, 512)
-
-# Create processed directories
-os.makedirs(f"{PROCESSED_DATA}/images/train", exist_ok=True)
-os.makedirs(f"{PROCESSED_DATA}/masks/train", exist_ok=True)
-os.makedirs(f"{PROCESSED_DATA}/images/val", exist_ok=True)
-os.makedirs(f"{PROCESSED_DATA}/masks/val", exist_ok=True)
+from tqdm import tqdm
+import albumentations as A
 
 
-# Resize images and masks while preserving aspect ratio
-def resize_with_aspect_ratio(image, target_size):
-    """
-    Resize an image while preserving aspect ratio, with padding to match the target size.
-    Args:
-        image: The input image (as a PIL Image).
-        target_size: Tuple (target_height, target_width).
-    Returns:
-        Resized and padded image as a PIL Image.
-    """
+def resize_with_aspect_ratio(image: Image.Image, size: tuple, resample: int) -> Image.Image:
     img = image.copy()
-    img.thumbnail((target_size[1], target_size[0]), Image.Resampling.LANCZOS)  # Use LANCZOS for high-quality downscaling
-    delta_w = target_size[1] - img.size[0]
-    delta_h = target_size[0] - img.size[1]
+    img.thumbnail((size[1], size[0]), resample)
+    delta_w = size[1] - img.size[0]
+    delta_h = size[0] - img.size[1]
     padding = (delta_w // 2, delta_h // 2, delta_w - delta_w // 2, delta_h - delta_h // 2)
-    padded_img = ImageOps.expand(img, padding, fill=0)  # Pad with black pixels
-    return padded_img
+    return ImageOps.expand(img, padding, fill=0)
 
 
-# Load and preprocess images and masks
-image_files = sorted(os.listdir(TRAIN_IMAGES))
-mask_files = sorted([os.path.join(root, name)
-                     for root, _, files in os.walk(MASK_OUTPUT)
-                     for name in files])
+def load_and_merge_masks(image_id: str, mask_root: str, image_size: tuple) -> Image.Image:
+    base = os.path.splitext(image_id)[0]
+    masks = []
+    for cls in range(1, 5):
+        path = os.path.join(mask_root, str(cls), f"{base}_class{cls}.png")
+        if os.path.exists(path):
+            masks.append(np.array(Image.open(path).convert("L")))
+    if masks:
+        merged = np.maximum.reduce(masks)
+    else:
+        merged = np.zeros((image_size[1], image_size[0]), dtype=np.uint8)
+    return Image.fromarray(merged)
 
-images = []
-masks = []
 
-for img_path, mask_path in zip(image_files, mask_files):
-    # Load and preprocess the image
-    img = Image.open(os.path.join(TRAIN_IMAGES, img_path)).convert("RGB")  # Ensure RGB format
-    img_resized = resize_with_aspect_ratio(img, IMG_SIZE)
-    img_array = np.array(img_resized) / 255.0  # Normalize to [0, 1]
-    images.append(img_array)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Preprocess steel defect dataset")
+    parser.add_argument("--image-dir", type=str, default="train_images", help="Directory with raw training images")
+    parser.add_argument("--mask-dir", type=str, default="mask_output", help="Directory with class mask subfolders")
+    parser.add_argument("--output-dir", type=str, default="processed_data", help="Where to write processed data")
+    parser.add_argument("--img-size", type=int, default=512, help="Output square size")
+    parser.add_argument("--val-split", type=float, default=0.2, help="Validation split ratio")
+    parser.add_argument("--augment", action="store_true", help="Apply Albumentations augmentations")
+    return parser.parse_args()
 
-    # Load and preprocess the mask
-    mask = Image.open(mask_path)
-    mask_resized = resize_with_aspect_ratio(mask, IMG_SIZE)
-    mask_array = np.array(mask_resized) / 255.0  # Scale between [0, 1]
-    masks.append(mask_array)
 
-# Convert to numpy arrays
-images = np.array(images, dtype=np.float32)
-masks = np.array(masks, dtype=np.float32)
+TRANSFORMS = A.Compose([
+    A.HorizontalFlip(p=0.5),
+    A.VerticalFlip(p=0.5),
+    A.RandomRotate90(p=0.5),
+    A.RandomBrightnessContrast(p=0.2),
+    A.CLAHE(p=0.2),
+    A.Cutout(num_holes=8, max_h_size=16, max_w_size=16, fill_value=0, p=0.5),
+])
 
-# Train-test split
-X_train, X_val, y_train, y_val = train_test_split(images, masks, test_size=0.2, random_state=42)
 
-# Save preprocessed data
-for i, (img, mask) in enumerate(zip(X_train, y_train)):
-    Image.fromarray((img * 255).astype(np.uint8)).save(f"{PROCESSED_DATA}/images/train/img_{i}.png")
-    Image.fromarray((mask * 255).astype(np.uint8)).save(f"{PROCESSED_DATA}/masks/train/mask_{i}.png")
+def process_dataset(args):
+    os.makedirs(os.path.join(args.output_dir, "images", "train"), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, "masks", "train"), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, "images", "val"), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, "masks", "val"), exist_ok=True)
 
-for i, (img, mask) in enumerate(zip(X_val, y_val)):
-    Image.fromarray((img * 255).astype(np.uint8)).save(f"{PROCESSED_DATA}/images/val/img_{i}.png")
-    Image.fromarray((mask * 255).astype(np.uint8)).save(f"{PROCESSED_DATA}/masks/val/mask_{i}.png")
+    image_files = sorted([f for f in os.listdir(args.image_dir) if f.lower().endswith((".png", ".jpg"))])
+    train_ids, val_ids = train_test_split(image_files, test_size=args.val_split, random_state=42)
 
-print("Data preprocessing and resizing complete!")
+    sum_channels = np.zeros(3, dtype=np.float64)
+    sumsq_channels = np.zeros(3, dtype=np.float64)
+    pixel_count = 0
+
+    for split, ids in [("train", train_ids), ("val", val_ids)]:
+        for img_name in tqdm(ids, desc=f"Processing {split}"):
+            img_path = os.path.join(args.image_dir, img_name)
+            img = Image.open(img_path).convert("RGB")
+            mask = load_and_merge_masks(img_name, args.mask_dir, img.size)
+
+            img_resized = resize_with_aspect_ratio(img, (args.img_size, args.img_size), Image.Resampling.LANCZOS)
+            mask_resized = resize_with_aspect_ratio(mask, (args.img_size, args.img_size), Image.Resampling.NEAREST)
+
+            img_array = np.array(img_resized)
+            mask_array = np.array(mask_resized)
+
+            if args.augment and split == "train":
+                augmented = TRANSFORMS(image=img_array, mask=mask_array)
+                img_array = augmented["image"]
+                mask_array = augmented["mask"]
+
+            if split == "train":
+                img_float = img_array.astype(np.float32) / 255.0
+                sum_channels += img_float.sum(axis=(0, 1))
+                sumsq_channels += (img_float ** 2).sum(axis=(0, 1))
+                pixel_count += img_float.shape[0] * img_float.shape[1]
+
+            out_img_name = os.path.splitext(img_name)[0] + ".png"
+            img_save_path = os.path.join(args.output_dir, "images", split, out_img_name)
+            mask_save_path = os.path.join(args.output_dir, "masks", split, f"mask_{out_img_name}")
+
+            Image.fromarray(img_array).save(img_save_path)
+            Image.fromarray(mask_array).save(mask_save_path)
+
+    mean = (sum_channels / pixel_count).tolist()
+    std = np.sqrt(sumsq_channels / pixel_count - np.square(mean)).tolist()
+    with open(os.path.join(args.output_dir, "mean_std.json"), "w") as f:
+        json.dump({"mean": mean, "std": std}, f)
+
+    print("Data preprocessing complete!")
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    process_dataset(args)
