@@ -31,11 +31,26 @@ Preprocess the Data:
 ```bash
 python src/data_preprocessing.py
 ```
+Train the UNet model:
+
+```bash
+python src/train.py --data-dir processed_data --epochs 25 --model-path unet_model.pth
+```
+To leverage multiple GPUs, add `--multi-gpu`:
+
+```bash
+python src/train.py --data-dir processed_data --epochs 25 --model-path unet_model.pth --multi-gpu
+```
 ## Real-Time Inference
 To perform real-time inference, run:
 
 ```bash
 python src/real_time.py
+```
+Use `--multi-gpu` to run inference on all available GPUs:
+
+```bash
+python src/real_time.py --multi-gpu
 ```
 
 ### Visualising
