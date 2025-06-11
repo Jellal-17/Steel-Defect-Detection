@@ -30,11 +30,11 @@ export CXX=g++
 
 python src/train_v2.py \
     --data-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/ \
-    --classes 4 \
+    --classes 1 \
     --arch resunetpp \
     --batch-size 32 \
     --workers 8 \
     --amp \
-    --save /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/best_model.pth
+    --save /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/best_model_2.pth
 
 # seff job_id
