@@ -21,10 +21,20 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/trinity/home/skadimisetty/data/sathvi
 export CXX=g++
 
 # run script
-python src/train.py \
+# python src/train.py \
+#     --data-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/ \
+#     --epochs 25 \
+#     --model-path /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/unet_model.pth \
+#     --multi-gpu \
+#     --visualize
+
+python src/train_v2.py \
     --data-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/ \
-    --epochs 25 \
-    --model-path /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/unet_model.pth \
-    --multi-gpu
+    --classes 4 \
+    --arch resunetpp \
+    --batch-size 32 \
+    --workers 8 \
+    --amp \
+    --save /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/best_model.pth
 
 # seff job_id

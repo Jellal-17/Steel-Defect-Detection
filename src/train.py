@@ -171,7 +171,7 @@ def parse_args():
     parser.add_argument("--data-dir", type=str, default="processed_data", help="Path to processed_data directory")
     parser.add_argument("--epochs", type=int, default=25, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
-    parser.add_argument("--model-path", type=str, default="unet_model_1.pth", help="Where to save the trained model")
+    parser.add_argument("--model-path", type=str, default="unet_model.pth", help="Where to save the trained model")
     parser.add_argument("--visualize", action="store_true", help="Save a sample prediction image after training")
     parser.add_argument(
         "--multi-gpu",
