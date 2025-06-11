@@ -61,7 +61,8 @@ class UNet(nn.Module):
         dec3 = self.dec_conv3(torch.cat([self.up3(bottleneck), enc3], dim=1))
         dec2 = self.dec_conv2(torch.cat([self.up2(dec3), enc2], dim=1))
         dec1 = self.dec_conv1(torch.cat([self.up1(dec2), enc1], dim=1))
-        return torch.sigmoid(self.output(dec1))
+        # return torch.sigmoid(self.output(dec1))
+        return self.output(dec1)
 
 
 class SegmentationDataset(Dataset):
@@ -86,22 +87,27 @@ class SegmentationDataset(Dataset):
         return img, mask
 
 
-def iou(pred, target, threshold=0.5):
-    pred = (pred > threshold).float()
-    intersection = (pred * target).sum()
-    union = pred.sum() + target.sum() - intersection
-    return intersection / (union + 1e-8)
+def iou_score(logits, targets, eps=1e-8):
+    probs = torch.sigmoid(logits)
+    preds = (probs > 0.5).float()
+    inter = (preds * targets).sum(dim=(2,3))
+    union = preds.sum(dim=(2,3)) + targets.sum(dim=(2,3)) - inter
+    return ((inter + eps) / (union + eps)).mean()
 
 
-def dice_coefficient(pred, target, threshold=0.5):
-    pred = (pred > threshold).float()
-    intersection = (pred * target).sum()
-    return (2 * intersection) / (pred.sum() + target.sum() + 1e-8)
+def dice_coeff(logits, targets, eps=1e-8):
+    """logits: raw (N,1,H,W); targets: 0/1"""
+    probs = torch.sigmoid(logits)
+    preds = (probs > 0.5).float()
+    inter = (preds * targets).sum(dim=(2,3))
+    union = preds.sum(dim=(2,3)) + targets.sum(dim=(2,3))
+    return ((2 * inter + eps) / (union + eps)).mean()
 
 
 def train(model, train_loader, val_loader, device, epochs):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.BCELoss()
+    # criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([12.0], device=device))
     for epoch in range(epochs):
         model.train()
         train_loss = 0
@@ -123,8 +129,8 @@ def train(model, train_loader, val_loader, device, epochs):
                 outputs = model(images)
                 loss = criterion(outputs, masks)
                 val_loss += loss.item()
-                dice_scores.append(dice_coefficient(outputs, masks).item())
-                iou_scores.append(iou(outputs, masks).item())
+                dice_scores.append(dice_coeff(outputs, masks).item())
+                iou_scores.append(iou_score(outputs, masks).item())
 
         print(
             f"Epoch {epoch+1}/{epochs} - Train Loss: {train_loss/len(train_loader):.4f}, "
@@ -141,7 +147,8 @@ def visualize_sample(model, dataset, device, output_path="sample_prediction.png"
     image, mask = dataset[0]
     with torch.no_grad():
         pred = model(image.unsqueeze(0).to(device))
-    pred = (pred > 0.5).float()[0, 0].cpu().numpy()
+    # pred = (pred > 0.5).float()[0, 0].cpu().numpy()
+    pred = (torch.sigmoid(pred) > 0.5).float()[0, 0].cpu().numpy()
 
     fig, ax = plt.subplots(1, 3, figsize=(12, 4))
     ax[0].imshow(image.permute(1, 2, 0).numpy())
@@ -163,8 +170,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train UNet for steel defect detection")
     parser.add_argument("--data-dir", type=str, default="processed_data", help="Path to processed_data directory")
     parser.add_argument("--epochs", type=int, default=25, help="Number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
-    parser.add_argument("--model-path", type=str, default="unet_model.pth", help="Where to save the trained model")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
+    parser.add_argument("--model-path", type=str, default="unet_model_1.pth", help="Where to save the trained model")
     parser.add_argument("--visualize", action="store_true", help="Save a sample prediction image after training")
     parser.add_argument(
         "--multi-gpu",

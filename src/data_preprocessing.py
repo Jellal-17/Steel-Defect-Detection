@@ -5,6 +5,7 @@ from PIL import Image, ImageOps
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from glob import glob
 import albumentations as A
 
 
@@ -21,13 +22,16 @@ def load_and_merge_masks(image_id: str, mask_root: str, image_size: tuple) -> Im
     base = os.path.splitext(image_id)[0]
     masks = []
     for cls in range(1, 5):
-        path = os.path.join(mask_root, str(cls), f"{base}_class{cls}.png")
-        if os.path.exists(path):
-            masks.append(np.array(Image.open(path).convert("L")))
+        path = os.path.join(mask_root, str(cls), f"{base}_class{cls}.*")
+        # if os.path.exists(path):
+        #     masks.append(np.array(Image.open(path).convert("L")))
+        for p in glob(path):
+            masks.append(np.array(Image.open(p).convert("L")))
+            break # Stop after first match
     if masks:
         merged = np.maximum.reduce(masks)
     else:
-        merged = np.zeros((image_size[1], image_size[0]), dtype=np.uint8)
+        merged = np.zeros((image_size[::-1]), dtype=np.uint8)
     return Image.fromarray(merged)
 
 
@@ -48,7 +52,7 @@ TRANSFORMS = A.Compose([
     A.RandomRotate90(p=0.5),
     A.RandomBrightnessContrast(p=0.2),
     A.CLAHE(p=0.2),
-    A.Cutout(num_holes=8, max_h_size=16, max_w_size=16, fill_value=0, p=0.5),
+    A.CoarseDropout(num_holes_range=(1, 8), hole_height_range=(10, 16), hole_width_range=(10, 16), fill=0, p=0.5),
 ])
 
 

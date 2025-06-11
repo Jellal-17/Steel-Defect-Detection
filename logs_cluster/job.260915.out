@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/lustreFS/data/lear/sathvik/Steel-Defect-Detection/src/data_preprocessing.py", line 7, in <module>
+    from tqdm import tqdm
+ModuleNotFoundError: No module named 'tqdm'
+Your remaining balance (at the time of job end)
+User           Usage |        Account     Usage | Account Limit Available (CPU hrs)
+---------- --------- + -------------- --------- + ------------- ---------
+ggrotto            6 |           LEAR       100 |             0       N/A
+ipastellas         4 |           LEAR       100 |             0       N/A
+skadimisetty *        90 |           LEAR       100 |             0       N/A
+vtsiourtis         1 |           LEAR       100 |             0       N/A
+vvassiliades         0 |           LEAR       100 |             0       N/A

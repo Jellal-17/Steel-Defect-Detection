@@ -21,6 +21,12 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/trinity/home/skadimisetty/data/sathvi
 export CXX=g++
 
 # run script
-python src/data_preprocessing.py
+python src/data_preprocessing.py \
+    --image-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/train_images/ \
+    --mask-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/mask_output/ \
+    --output-dir /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/processed_data/ \
+    --img-size 512 \
+    --val-split 0.2 \
+    --augment
 
 # seff job_id

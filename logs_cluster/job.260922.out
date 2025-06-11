@@ -1,0 +1,35 @@
+Using 4 GPUs
+Epoch 1/25 - Train Loss: 0.0264, Val Loss: 0.0208, Dice: 0.0000, IoU: 0.0000
+Epoch 2/25 - Train Loss: 0.1551, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 3/25 - Train Loss: 0.5020, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 4/25 - Train Loss: 0.5029, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 5/25 - Train Loss: 0.5020, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 6/25 - Train Loss: 0.5022, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 7/25 - Train Loss: 0.5029, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 8/25 - Train Loss: 0.5024, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 9/25 - Train Loss: 0.5020, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 10/25 - Train Loss: 0.5022, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 11/25 - Train Loss: 0.5021, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 12/25 - Train Loss: 0.5020, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 13/25 - Train Loss: 0.5023, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 14/25 - Train Loss: 0.5026, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 15/25 - Train Loss: 0.5028, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 16/25 - Train Loss: 0.5044, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 17/25 - Train Loss: 0.5035, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 18/25 - Train Loss: 0.5021, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 19/25 - Train Loss: 0.5034, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 20/25 - Train Loss: 0.5024, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 21/25 - Train Loss: 0.5027, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 22/25 - Train Loss: 0.5022, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 23/25 - Train Loss: 0.5031, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 24/25 - Train Loss: 0.5026, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Epoch 25/25 - Train Loss: 0.5023, Val Loss: 0.5347, Dice: 0.0000, IoU: 0.0000
+Model saved to /trinity/home/skadimisetty/data/sathvik/Steel-Defect-Detection/src/unet_model.pth
+Your remaining balance (at the time of job end)
+User           Usage |        Account     Usage | Account Limit Available (CPU hrs)
+---------- --------- + -------------- --------- + ------------- ---------
+ggrotto            6 |           LEAR       122 |             0       N/A
+ipastellas         4 |           LEAR       122 |             0       N/A
+skadimisetty *       112 |           LEAR       122 |             0       N/A
+vtsiourtis         1 |           LEAR       122 |             0       N/A
+vvassiliades         0 |           LEAR       122 |             0       N/A
