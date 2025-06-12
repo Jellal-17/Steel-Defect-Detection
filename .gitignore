@@ -1,14 +1,16 @@
 # Byte-compiled files
 *.pyc
 __pycache__/
+
+# Images
 *.png
 *.jpg
 
 # Data and results
-data/
-results/
-models/
 train_images/
 mask_output/
 test_images/
 processed_data/
+logs_cluster/
+
+*.sh

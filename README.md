@@ -18,10 +18,10 @@ This project implements a steel defect detection system using a UNet-based seman
    cd steel-defect-detection
     ```
 2. Install dependencies:
-```bash
-    pip install -r requirements.txt
-    pip install segmentation_models_pytorch scipy
-```
+    ```bash
+        pip install -r requirements.txt
+        pip install segmentation_models_pytorch scipy
+    ```
 
 ## Usage
 ### Training
@@ -80,15 +80,10 @@ The helper erodes small false-positive speckles by
 1) morphological closing and  
 2) dropping blobs smaller than `--postprocess-min-area` pixels (default = 50).
 
-### Visualising
-To visulaise the model performance, run:
-
-```bash
-python src/visualise.py
-```
 
 ## Results
 Binary ResUNet++ @768² ⇒ Dice 0.57  /  IoU 0.50 (val split 20 %)
+> Other results, might not be useful but for completeness - Pixel Acc-0.9679, Precision-0.1295 Recall-0.8729
 
 ## License
 This project is licensed under the MIT License.
