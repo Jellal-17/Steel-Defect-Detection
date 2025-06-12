@@ -1,24 +1,35 @@
-# sample_prediction.py – quick inference helper for train_improved models
-# ------------------------------------------------------------
-# Usage example:
-#   python sample_prediction.py \
-#       --images-dir demo_images \
-#       --weights best_model.pth \
-#       --arch resunetpp --classes 1 \
-#       --out-dir preds --threshold 0.5 --tta flip
-# ------------------------------------------------------------
+#!/usr/bin/env python3
+"""sample_prediction.py  —  predict masks **and** compute metrics (Dice, IoU, pixel-Acc, Precision, Recall)
 
-import os, argparse, cv2, numpy as np, torch
+If you pass only ``--images-dir`` the script writes predicted masks.
+If you *also* provide ``--masks-dir`` with ground-truth PNGs, it
+aggregates TP / FP / FN / TN over the whole set and prints the metrics.
+
+Example : generate masks *and* stats on your validation split
+-------------------------------------------------------------
+```bash
+python sample_prediction.py \
+    --images-dir processed_data/images/val \
+    --masks-dir  processed_data/masks/val \
+    --weights    best_model.pth \
+    --arch       resunetpp \
+    --classes    1 \
+    --out-dir    predictions \
+    --tta        flip \
+    --postprocess-min-area 50
+```
+"""
+
+import os, argparse, cv2, numpy as np, torch, albumentations as A, scipy.ndimage as ndi
 from glob import glob
 from tqdm import tqdm
-import albumentations as A
 
 try:
     import segmentation_models_pytorch as smp
 except ImportError:
     smp = None
 
-# ---------- minimal model factory (same as train_improved) -------------
+# ─────────────────── model factory (same as train_improved) ────────────
 class DoubleConv(torch.nn.Sequential):
     def __init__(self, ic, oc, mc=None, norm=torch.nn.BatchNorm2d):
         mc = mc or oc
@@ -26,7 +37,8 @@ class DoubleConv(torch.nn.Sequential):
             torch.nn.Conv2d(ic, mc, 3, 1, 1, bias=False),
             norm(mc), torch.nn.ReLU(inplace=True),
             torch.nn.Conv2d(mc, oc, 3, 1, 1, bias=False),
-            norm(oc), torch.nn.ReLU(inplace=True))
+            norm(oc), torch.nn.ReLU(inplace=True),
+        )
 
 class UNet(torch.nn.Module):
     def __init__(self, classes=1, base=64):
@@ -56,70 +68,115 @@ class UNet(torch.nn.Module):
         return x
 
 def build_model(arch, classes):
-    if arch=='unet':
+    if arch == "unet":
         return UNet(classes)
-    if arch=='resunetpp':
+    if arch == "resunetpp":
         if smp is None:
-            raise RuntimeError("Install segmentation_models_pytorch for ResUNet++")
+            raise RuntimeError("pip install segmentation_models_pytorch")
         return smp.UnetPlusPlus('resnet34', encoder_weights=None, in_channels=3, classes=classes)
     raise ValueError(arch)
 
-# ------------------------- post‑process helpers -------------------------
-import scipy.ndimage as ndi
-
-def post_process(mask, min_area=50):
-    # Remove tiny blobs and close small holes
-    mask = ndi.binary_closing(mask, structure=np.ones((3,3))).astype(np.uint8)
+# ────────────────── post‑process helper ────────────────────────────────
+def post_process(mask: np.ndarray, min_area: int = 50) -> np.ndarray:
+    """Morph-close and drop blobs < min_area px (binary uint8 mask)"""
+    mask = ndi.binary_closing(mask, structure=np.ones((3, 3))).astype(np.uint8)
     lab, n = ndi.label(mask)
-    sizes = ndi.sum(mask, lab, range(1, n+1))
+    sizes = ndi.sum(mask, lab, range(1, n + 1))
     for i, s in enumerate(sizes, start=1):
         if s < min_area:
             mask[lab == i] = 0
     return mask
 
-# ------------------------- main ----------------------------------------
+# ────────────────── CLI ────────────────────────────────────────────────
 
 def parse():
-    p=argparse.ArgumentParser()
+    p = argparse.ArgumentParser()
     p.add_argument('--images-dir', required=True)
     p.add_argument('--weights', required=True)
     p.add_argument('--arch', choices=['unet','resunetpp'], default='unet')
     p.add_argument('--classes', type=int, default=1)
     p.add_argument('--out-dir', default='predictions')
+    p.add_argument('--masks-dir', help='Optional ground-truth masks folder (PNG)')
     p.add_argument('--threshold', type=float, default=0.5)
     p.add_argument('--tta', choices=['none','flip'], default='none')
-    p.add_argument('--postprocess', action='store_true')
+    p.add_argument('--postprocess-min-area', type=int, default=0)
     return p.parse_args()
 
+# ────────────────── metric helpers ─────────────────────────────────────
 
-def inference():
-    a=parse(); os.makedirs(a.out_dir, exist_ok=True)
-    dev='cuda' if torch.cuda.is_available() else 'cpu'
-    model=build_model(a.arch,a.classes).to(dev)
-    state=torch.load(a.weights, map_location='cpu'); model.load_state_dict(state)
+def update_conf(pred: np.ndarray, gt: np.ndarray, conf):
+    conf['TP'] += np.logical_and(pred,  gt).sum()
+    conf['FP'] += np.logical_and(pred, ~gt).sum()
+    conf['FN'] += np.logical_and(~pred, gt).sum()
+    conf['TN'] += np.logical_and(~pred, ~gt).sum()
+
+# ────────────────── main ------------------------------------------------
+
+def main():
+    args = parse()
+    os.makedirs(args.out_dir, exist_ok=True)
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model  = build_model(args.arch, args.classes).to(device)
+
+    state = torch.load(args.weights, map_location='cpu')
+    if next(iter(state)).startswith('module.'):
+        state = {k.replace('module.', '', 1): v for k, v in state.items()}
+    model.load_state_dict(state, strict=False)
     model.eval()
-    tf=A.Resize(512,512)
 
-    img_paths = sorted(glob(os.path.join(a.images_dir,'*')))
-    for p in tqdm(img_paths):
-        orig=cv2.imread(p)[:,:,::-1]
-        h0,w0,_=orig.shape
-        img=tf(image=orig)['image'].astype(np.float32)/255.
-        inp=torch.tensor(img.transpose(2,0,1))[None].to(dev)
+    resize = A.Resize(512, 512)
+    conf   = {'TP':0,'FP':0,'FN':0,'TN':0} if args.masks_dir else None
+
+    img_paths = sorted(glob(os.path.join(args.images_dir, '*')))
+    for img_path in tqdm(img_paths, desc='Predict'):
+        img0 = cv2.imread(img_path)[:, :, ::-1]
+        h0, w0 = img0.shape[:2]
+        img_r = resize(image=img0)['image'].astype(np.float32) / 255.0
+        inp = torch.tensor(img_r.transpose(2, 0, 1))[None].to(device)
+
         with torch.no_grad():
-            pred=torch.sigmoid(model(inp))
-            if a.tta=='flip':
-                inp_h=torch.flip(inp,[-1])
-                pred+=torch.sigmoid(model(inp_h)).flip(-1)
-                inp_v=torch.flip(inp,[-2])
-                pred+=torch.sigmoid(model(inp_v)).flip(-2)
-                pred/=3
-        mask= (pred[0,0].cpu().numpy()>a.threshold).astype(np.uint8)
-        if a.postprocess:
-            mask=post_process(mask)
-        mask=cv2.resize(mask,(w0,h0), interpolation=cv2.INTER_NEAREST)*255
-        out_name=os.path.join(a.out_dir, os.path.basename(p).split('.')[0]+'_pred.png')
-        cv2.imwrite(out_name, mask)
+            pred = torch.sigmoid(model(inp))
+            if args.tta == 'flip':
+                pred += torch.sigmoid(model(torch.flip(inp, [-1]))).flip(-1)
+                pred += torch.sigmoid(model(torch.flip(inp, [-2]))).flip(-2)
+                pred /= 3
 
-if __name__=='__main__':
-    inference()
+        mask = (pred[0, 0].cpu().numpy() > args.threshold).astype(np.uint8)
+        if args.postprocess_min_area > 0:
+            mask = post_process(mask, args.postprocess_min_area)
+
+        # save resized prediction PNG
+        mask_resized = cv2.resize(mask, (w0, h0), interpolation=cv2.INTER_NEAREST) * 255
+        out_name = os.path.join(args.out_dir, os.path.splitext(os.path.basename(img_path))[0] + '_pred.png')
+        cv2.imwrite(out_name, mask_resized)
+
+        # update confusion if GT available
+        if conf is not None:
+            base = os.path.splitext(os.path.basename(img_path))[0]
+            gt_path = os.path.join(args.masks_dir, f"mask_{base}.png")
+            if os.path.exists(gt_path):
+                gt = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE) > 0
+                pred_bin = cv2.resize(mask, gt.shape[::-1],
+                                      interpolation=cv2.INTER_NEAREST).astype(bool)
+                update_conf(pred_bin, gt, conf)
+
+    # print once, after all images    
+    if conf is not None:
+        TP, FP, FN, TN = conf['TP'], conf['FP'], conf['FN'], conf['TN']
+        eps  = 1e-6
+        dice = 2 * TP / (2 * TP + FP + FN + eps)
+        iou  =     TP / (    TP + FP + FN + eps)
+        acc  = (TP + TN) / (TP + TN + FP + FN + eps)
+        prec = TP / (TP + FP + eps)
+        rec  = TP / (TP + FN + eps)
+
+        print("\n── Validation metrics ──────────────────────")
+        print(f"Dice      : {dice:.4f}")
+        print(f"IoU       : {iou:.4f}")
+        print(f"Pixel Acc : {acc:.4f}")
+        print(f"Precision : {prec:.4f}")
+        print(f"Recall    : {rec:.4f}\n")
+
+if __name__ == '__main__':
+    main()
