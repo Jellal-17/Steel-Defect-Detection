@@ -1,17 +1,0 @@
-  0%|          | 0/314 [00:00<?, ?it/s]  0%|          | 0/314 [00:02<?, ?it/s]
-Traceback (most recent call last):
-  File "/lustreFS/data/lear/sathvik/Steel-Defect-Detection/src/train_v2.py", line 198, in <module>
-    main()
-  File "/lustreFS/data/lear/sathvik/Steel-Defect-Detection/src/train_v2.py", line 190, in main
-    tr,_,_=run_epoch(model,dl_tr,crit,opt,scaler,dev,True,a.amp)
-  File "/lustreFS/data/lear/sathvik/Steel-Defect-Detection/src/train_v2.py", line 143, in run_epoch
-    with torch.amp.autocast(enabled=amp):
-TypeError: autocast.__init__() missing 1 required positional argument: 'device_type'
-Your remaining balance (at the time of job end)
-User           Usage |        Account     Usage | Account Limit Available (CPU hrs)
----------- --------- + -------------- --------- + ------------- ---------
-ggrotto            6 |           LEAR       137 |             0       N/A
-ipastellas         3 |           LEAR       137 |             0       N/A
-skadimisetty *       127 |           LEAR       137 |             0       N/A
-vtsiourtis         1 |           LEAR       137 |             0       N/A
-vvassiliades         0 |           LEAR       137 |             0       N/A

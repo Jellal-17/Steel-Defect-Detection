@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """version 2 - steel defect segmentation trainer"""
 

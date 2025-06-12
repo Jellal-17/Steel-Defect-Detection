@@ -11,6 +11,7 @@ train_images/
 mask_output/
 test_images/
 processed_data/
-logs_cluster/
+
+logs_cluster
 
 *.sh
